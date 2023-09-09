@@ -7,6 +7,7 @@ import random
 
 #aiogram и всё утилиты для коректной работы с Telegram API
 from aiogram import Bot, types
+from aiogram.fsm.context import FSMContext
 from aiogram.utils import executor
 from aiogram.utils.emoji import emojize
 from aiogram.dispatcher import Dispatcher
@@ -14,7 +15,7 @@ from aiogram.types.message import ContentType
 from aiogram.utils.markdown import text, bold, italic, code, pre
 from aiogram.types import ParseMode, InputMediaPhoto, InputMediaVideo, ChatActions
 from aiogram.types import ReplyKeyboardRemove,ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.dispatcher import FSMCon
+from aiogram.dispatcher.fsm.context import FSMContext
 text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -55,12 +56,14 @@ async def start(message: types.Message):
 
 class CreateProfile(StatesGroup):
     name = State()
-    photo = State()
     description = State()
     course = State()
     institute = State()
     interests = State()
+    photo = State()
 
+
+# hendler для старта создания профиля
 @dp.message_handler(lambda message: message.text == "Создать анкету",state = '*')
 async def create_profile(message : types.Message):
 
@@ -76,4 +79,39 @@ async def create_profile(message : types.Message):
             await CreateProfile.name.set()
         elif(db.user_exists(message.from_user.id)):
             await message.answer('У тебя уже есть анкета')
+    else:
+        await message.answer('У вас не заполнен username в телеграме')
+
+
+#hendler для ввода имени
+@dp.message_handler(state=CreateProfile.name)
+async def input_profile_name(message: types.Message, state: FSMContext):
+    if str(message.text) == 'Выйти'
+        await state.finish()
+        await start(message)
+        return
+    if len(str(message.text)) < 35:
+        await state.update_data(profile_name = message.text.lower())
+        await message.answer('Теперь заполни описание своего профиля')
+        await CreateProfile.next()
+    else:
+        await message.answer('Попробуй ещё раз!')
+        return
+
+@dp.message_handler(state=CreateProfile.description)
+async def input_profile_description(message: types.Message, state: FSMContext):
+    if str(message.text) == 'Выйти':
+        await state.finish()
+        await start(message)
+        return
+    if len(message.text) < 35:
+        await state.update_data(profile_description=message.text)
+        await message.answer('')
+        await CreateProfile.next()
+    else:
+        await message.answer('Попробуй ещё раз!')
+        #прерывание функции
+        return
+
+
 
